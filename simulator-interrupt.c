@@ -7,10 +7,6 @@
 #include <errno.h>
 #include <unistd.h>
 
-typedef short bool;
-#define true 1
-#define false 0
-
 #define MAX_MEM_SIZE  128  //The max memory size - (unit: word - 32 bits)
 
 typedef struct memory{
@@ -71,6 +67,10 @@ int timer_tick(COMPUTER* );
 int check_interrupt(COMPUTER* );
 
 /*TEST CASES*/
+typedef short bool;
+#define true 1
+#define false 0
+
 bool testDecode() {
 	uint32_t instr = 0x02030201;
 	uint8_t * p_opcode,  * p_sreg, * p_treg;
