@@ -5,10 +5,13 @@
 #include <sys/wait.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
-#define MAX_MEM_SIZE  128  //The max memory size - (unit: word - 32 bits) 
+typedef short bool;
+#define true 1
+#define false 0
+
+#define MAX_MEM_SIZE  128  //The max memory size - (unit: word - 32 bits)
 
 typedef struct memory{
 	uint32_t addr[MAX_MEM_SIZE];
@@ -67,9 +70,31 @@ int execute(COMPUTER *, uint8_t *, uint8_t *, uint8_t *, int8_t *);
 int timer_tick(COMPUTER* );
 int check_interrupt(COMPUTER* );
 
+/*TEST CASES*/
+bool testDecode() {
+	uint32_t instr = 0x02030201;
+	uint8_t * p_opcode,  * p_sreg, * p_treg;
+	int8_t * p_imm;
+
+    p_opcode = (uint8_t *) malloc(sizeof(uint8_t));
+    p_sreg = (uint8_t*) malloc(sizeof(uint8_t));
+    p_treg = (uint8_t*) malloc(sizeof(uint8_t));
+    p_imm = (int8_t*) malloc(sizeof(int8_t));
+
+	decode(instr, p_opcode, p_sreg, p_treg, p_imm);
+    if (*p_opcode == 0x2 && *p_sreg == 0x3 && *p_treg == 0x2 && *p_imm ==0x1) return true; else return false;
+}
+
+void allTest() {
+    printf("testDecode: %s\n", testDecode()?"Pass":"Fail") ;
+}
+
+/*END TEST CASES*/
+
+
 int main(int argc, char ** args)
 {
-
+	//allTest();
 	if( argc != 3 ){
 		printf("\nUsage: ./icpu ios 16\n");
 		printf("\t ios: the os for interrupts; 16: the initial PC\n \n");
@@ -94,14 +119,14 @@ int main(int argc, char ** args)
 
 	// Execute CPU cyles: fetch, decode, execution, and increment PC; Repeat
 	while(1){
-		//printf("\n\nBefore\n");
-		//print_cpu(&comp);
+		printf("\n\nBefore\n");
+		print_cpu(&comp);
 
 		if( cpu_cycle(&comp) < 0 )
 			break;
 
-		//printf("After\n");
-		//print_cpu(&comp);
+		printf("After\n");
+		print_cpu(&comp);
 	}
 
   	return 0;
@@ -144,8 +169,14 @@ int fetch(COMPUTER * cp)
 int decode(uint32_t instr, uint8_t * p_opcode, uint8_t * p_sreg, uint8_t * p_treg, int8_t * p_imm)
 {
 	//For the given instruction 'instr', obtain the following opecode, source/target and immediate value
+	/* Intel32 is little endian - the least significant byte first (lowest address) and the most significant byte last (highest address) */
 
-	/* Your implemenation here*/
+	uint8_t * p = (uint8_t *) &instr;
+
+	*p_opcode = *(p+3);
+    *p_sreg = *(p+2);
+    *p_treg = *(p+1);
+    *p_imm = (int8_t*) *p;
 
 	return 0;
 }
@@ -190,8 +221,8 @@ int check_interrupt(COMPUTER* cp)
 int computer_load_init(COMPUTER * cp, char * file)
 {
     //load the image file
-    int fd;
-    int ret;
+    int fd; // file descriptor for image file
+    int ret; // size of the image file, modified by read()
 
     // open the file
     if ( ( fd = open( file, O_RDONLY ) ) < 0 ){
