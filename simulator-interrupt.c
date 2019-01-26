@@ -35,21 +35,21 @@ typedef struct computer{
 }COMPUTER;
 
 enum {
-    OP_HALT = 0,
-    OP_NOP,
-    OP_ADDI,
-    OP_MOVEREG,
-    OP_MOVEI,
-    OP_LW,
-    OP_SW,
-    OP_BLEZ,
-    OP_LA,
-    OP_PUSH,
-    OP_POP,
-    OP_ADD,
-    OP_JMP,
-    OP_IRET,
-    OP_PUT,
+    OP_HALT = 0x00,
+    OP_NOP = 0x01,
+    OP_ADDI = 0x02,
+    OP_MOVEREG = 0x03,
+    OP_MOVEI = 0x04,
+    OP_LW = 0x05,
+    OP_SW = 0x06,
+    OP_BLEZ = 0x07,
+    OP_LA = 0x08,
+    OP_PUSH = 0x09,
+    OP_POP = 0x0a,
+    OP_ADD = 0x0b,
+    OP_JMP = 0x0c,
+    OP_IRET = 0x10,
+    OP_PUT = 0x11,
     OP_NONE = 0xff,
 };
 
@@ -94,6 +94,7 @@ void allTest() {
 
 int main(int argc, char ** args)
 {
+    printf("----------------------------------------------------------------\n|           Simple von Neumann Computer for CENG 5401          |\n|             Tianyi YANG (tyyang@cse.cuhk.edu.hk)             |\n----------------------------------------------------------------");
 	//allTest();
 	if( argc != 3 ){
 		printf("\nUsage: ./icpu ios 16\n");
@@ -162,7 +163,6 @@ int fetch(COMPUTER * cp)
 	//Fetch the instruction to IR from the memory pointed by PC
     if (cp->cpu.PC >= MAX_MEM_SIZE) return -1; else {
         cp->cpu.IR = cp->memory.addr[cp->cpu.PC];
-        ++ cp->cpu.PC; //Increase PC
         return 0;
     }
 }
@@ -186,7 +186,84 @@ int execute(COMPUTER *cp, uint8_t * p_opcode, uint8_t * p_sreg, uint8_t * p_treg
 {
 	// Execute the instruction baed on opcode, source/target reg and immediate
 
-	/* Your implemenation here*/
+    switch (*p_opcode) {
+        case OP_HALT:
+            printf("Instruction: halt\n");
+            return -1;
+        case OP_NOP:
+            printf("Instruction: nop\n");
+            break;
+        case OP_ADDI:
+            printf("Instruction: addi R%d, R%d, %d\n", *p_sreg, *p_treg, *p_imm);
+            cp->cpu.R[*p_treg] = cp->cpu.R[*p_sreg] + *p_imm;
+            cp->cpu.PC ++;
+            break;
+        case OP_MOVEREG:
+            printf("Instruction: move_reg R%d, R%d\n", *p_sreg, *p_treg);
+            cp->cpu.R[*p_treg] = cp->cpu.R[*p_sreg];
+            cp->cpu.PC ++;
+            break;
+        case OP_MOVEI:
+            printf("Instruction: movei R%d, %d\n", *p_treg, *p_imm);
+            cp->cpu.R[*p_treg] = *p_imm;
+            cp->cpu.PC ++;
+            break;
+        case OP_LW:
+            printf("Instruction: lw R%d, R%d, %d\n", *p_sreg, *p_treg, *p_imm);
+            cp->cpu.R[*p_treg] = cp->memory.addr[cp->cpu.R[*p_sreg] + *p_imm];
+            cp->cpu.PC ++;
+            break;
+        case OP_SW:
+            printf("Instruction: sw R%d, R%d, %d\n", *p_sreg, *p_treg, *p_imm);
+            cp->memory.addr[cp->cpu.R[*p_sreg] + *p_imm] = cp->cpu.R[*p_treg];
+            cp->cpu.PC ++;
+            break;
+        case OP_BLEZ:
+            printf("Instruction: blez R%d, %d\n", *p_sreg, *p_imm);
+            if (cp->cpu.R[*p_sreg] <= 0) cp->cpu.PC += 1+*p_imm; else cp->cpu.PC ++;
+            break;
+        case OP_LA:
+            printf("Instruction: la R%d, %d\n", *p_treg, *p_imm);
+            cp->cpu.R[*p_treg] = cp->cpu.PC + 1 + *p_imm;
+            cp->cpu.PC ++;
+            break;
+        case OP_ADD:
+            printf("Instruction: add R%d, R%d\n", *p_sreg, *p_treg);
+            cp->cpu.R[*p_treg] = cp->cpu.R[*p_sreg] + cp->cpu.R[*p_treg];
+            cp->cpu.PC ++;
+            break;
+        case OP_JMP:
+            printf("Instruction: jmp %d\n", *p_imm);
+            cp->cpu.PC += 1+ *p_imm;
+            break;
+        case OP_PUSH:
+            printf("Instruction: push R%d\n", *p_sreg);
+            cp->cpu.SP --;
+            cp->memory.addr[cp->cpu.SP] = cp->cpu.R[*p_sreg];
+            cp->cpu.PC ++;
+            break;
+        case OP_POP:
+            printf("Instruction: pop R%d\n", *p_treg);
+            cp->cpu.R[*p_treg] = cp->memory.addr[cp->cpu.SP];
+            cp->cpu.SP ++;
+            cp->cpu.PC ++;
+            break;
+        case OP_IRET:
+            printf("Instruction: iret\n");
+            cp->cpu.PC = cp->memory.addr[cp->cpu.SP];
+            cp->cpu.SP ++;
+            cp->cpu.PSR = cp->memory.addr[cp->cpu.SP];
+            cp->cpu.SP ++;
+            break;
+        case OP_PUT:
+            printf("Instruction: put R%d\n", *p_sreg);
+            printf("PUT> %c\n", cp->cpu.R[*p_sreg]);
+            cp->cpu.PC ++;
+            break;
+        default:
+            printf("Error: invalid opcode 0x%x\n", *p_opcode);
+            return -1;
+    }
    	return 0;
 }
 
