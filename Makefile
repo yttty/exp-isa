@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c99 -Wall -g
+CFLAGS=-std=c99 -Wall 
 
 all: simulator-interrupt
 

@@ -160,10 +160,11 @@ int cpu_cycle(COMPUTER * cp)
 int fetch(COMPUTER * cp)
 {
 	//Fetch the instruction to IR from the memory pointed by PC
-
-	/* Your implemenation here*/
-
-	return 0;
+    if (cp->cpu.PC >= MAX_MEM_SIZE) return -1; else {
+        cp->cpu.IR = cp->memory.addr[cp->cpu.PC];
+        ++ cp->cpu.PC; //Increase PC
+        return 0;
+    }
 }
 
 int decode(uint32_t instr, uint8_t * p_opcode, uint8_t * p_sreg, uint8_t * p_treg, int8_t * p_imm)
@@ -186,7 +187,6 @@ int execute(COMPUTER *cp, uint8_t * p_opcode, uint8_t * p_sreg, uint8_t * p_treg
 	// Execute the instruction baed on opcode, source/target reg and immediate
 
 	/* Your implemenation here*/
-
    	return 0;
 }
 
