@@ -1,7 +1,7 @@
 ;;; .data
 .word 0                         ; ISR address
 
-;;; stack for 2 processes
+;;; stack for 4 processes
 .word 0
 .word 0
 .word 0
@@ -18,11 +18,29 @@ A_stack_top:
 .word 0
 B_stack_top:
 
+.word 0
+.word 0
+.word 0
+.word 0
+.word 0
+.word 0
+C_stack_top:
+
+.word 0
+.word 0
+.word 0
+.word 0
+.word 0
+.word 0
+D_stack_top:
+
 current:
 .word 0                         ; current proc num
 process_control_block:
 .word 0                         ; saved sp(A)
 .word 0                         ; saved sp(B)
+.word 0                         ; saved sp(C)
+.word 0                         ; saved sp(D)
 
 ;;; .text
 OS_start:
@@ -30,6 +48,48 @@ OS_start:
     movei   R0, 0
     la      R1, save_context
     sw      R0, R1, 0
+
+    ;; setup initial context for process D
+    la      sp, D_stack_top     ; sp <- D_stack_top
+    ;; save PSR and PC
+    movei   R1, 1               ; enable interrupt
+    push    R1
+    la      R1, proc_start      ; initial PC points to entry point of proc
+    push    R1
+
+    ;; save(clear) general purpose registers
+    movei   R1, 0
+    push    R1  ; push for R0
+    push    R1  ; push for R1
+    push    R1  ; push for R2
+    movei   R3, 68  ; 'D'
+    push    R3
+
+    ;; save sp
+    la      R2, process_control_block
+    sw      R2, sp, 3
+
+
+    ;; setup initial context for process C
+    la      sp, C_stack_top     ; sp <- D_stack_top
+    ;; save PSR and PC
+    movei   R1, 1               ; enable interrupt
+    push    R1
+    la      R1, proc_start      ; initial PC points to entry point of proc
+    push    R1
+
+    ;; save(clear) general purpose registers
+    movei   R1, 0
+    push    R1  ; push for R0
+    push    R1  ; push for R1
+    push    R1  ; push for R2
+    movei   R3, 67  ; 'C'
+    push    R3
+
+    ;; save sp
+    la      R2, process_control_block
+    sw      R2, sp, 2
+
 
     ;; setup initial context for Process B
     la      sp, B_stack_top     ; sp <- B_stack_top
@@ -47,17 +107,17 @@ OS_start:
     movei   R3, 66              ; R3 <- 'B'
     push    R3                  ; save R3 so that after restoring the context, proc A should see 'A' and proc B should see 'B'
 
-    ;; save sp 
+    ;; save sp
     la      R2, process_control_block
-    addi    R2, R2, 1		; sp is saved to process_control_block[1] for context switch 
+    addi    R2, R2, 1		; sp is saved to process_control_block[1] for context switch
     sw      R2, sp, 0
 
     ;; Execute Process A first
-    ;;   First, set up the current process id (0) for Process A 
-    movei   R0, 0		
-    la      R1, current 
+    ;;   First, set up the current process id (0) for Process A
+    movei   R0, 0
+    la      R1, current
     sw      R1, R0, 0
-    ;;   Second, set up the inital value of R3 (for print 'A') 
+    ;;   Second, set up the inital value of R3 (for print 'A')
     movei  R3, 65		; R3 <- 'A'
     ;;   Third, set up sp of Process A
     la     sp, A_stack_top
@@ -79,19 +139,29 @@ save_context:
     lw      R0, R3, 0           ; R3 <- current process id
 
     ;; save sp
-    la      R0, process_control_block 
+    la      R0, process_control_block
     add     R3, R0              ; R0 <- addr of process_control_block[current]
     sw      R0, sp, 0           ; process_control_block[current] <- sp
     ;; set R2 as the next process id
-    movei    R2, 1              ; if R3 == 0 then R2 <- 1 else 0
-    blez    R3, switch_proc
-    movei    R2, 0
+    move_reg    R3, R1  ; R1 <- R3
+    movei   R0, 0       ; R0 <- 0
+while:
+    addi    R0, R0, -1      ; R0 <- 0-R1 = 0-R3
+    addi    R1, R1, -1
+    blez    R1, end_while
+    jmp     while
+end_while:
+    addi    R0, R0, 3   ; R0 <- 3-R1 = 3-R3
+    movei   R2, 0
+    blez    R0, switch_proc
+    addi    R3, R2, 1   ; if 3-R3=0 then R2 <- 0 else R2 <- R3 + 1
+
 switch_proc:                 ; R2 = next process id
     ;; update current process id
     la      R0, current
     sw      R0, R2, 0           ; current <- R2
     ;; restore sp
-    la      R0, process_control_block 
+    la      R0, process_control_block
     add     R2, R0              ; R0 <- addr of process_control_block[next]
     lw      R0, sp, 0           ; sp <- process_control_block[next]
     ;; restore general purpose registers
@@ -103,5 +173,5 @@ switch_proc:                 ; R2 = next process id
     iret
 
 proc_start:                     ; entry point of user process
-    put     R3                  ; print the char in R3 on the screen 
+    put     R3                  ; print the char in R3 on the screen
     jmp     proc_start

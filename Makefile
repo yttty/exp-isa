@@ -1,12 +1,16 @@
 CC=gcc
 CFLAGS=-std=c99 -Wall
+ASM=./utils/assembler
+EXEC=icpu
 
-all: simulator-interrupt 4p-os
+all: simulator-interrupt 4p-os.code
 
-simulator-interrupt: simulator-interrupt.c; $(CC) -o icpu simulator-interrupt.c $(CFLAGS)
+simulator-interrupt: simulator-interrupt.c; $(CC) -o $(EXEC) simulator-interrupt.c $(CFLAGS)
 
-debug: simulator-interrupt.c; $(CC) -o icpu simulator-interrupt.c $(CFLAGS) -DDEBUG
+debug: simulator-interrupt.c; $(CC) -o $(EXEC)  simulator-interrupt.c $(CFLAGS) -DDEBUG
 
-4p-os: 4p-os.asm; ./utils/assembler 4p-os.asm 4p-os.code
+%.code: %.asm; $(ASM) $< $@
 
-clean:; rm icpu
+run:; ./$(EXEC) 4p-os.code 30
+
+clean:; rm icpu *.code
